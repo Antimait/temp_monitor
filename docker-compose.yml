@@ -1,0 +1,39 @@
+version: "3"
+
+services:
+
+  broker:
+    image: eclipse-mosquitto
+    restart: always
+    networks:
+      - mqtt
+    ports:
+      - 1883:1883
+    command:
+      ["mosquitto", "-v"]
+
+  backend:
+    image: nodered/node-red
+    restart: always
+    environment:
+      - FLOWS=backend_flow.json
+    volumes:
+      - ./temp_data:/temp_data
+      - ./backend_flow.json:/data/backend_flow.json
+    ports:
+      - 1880:1880
+    networks:
+      - mqtt
+    depends_on:
+      - broker
+
+  webapp:
+    build: ./webapp
+    restart: always
+    ports:
+      - 3000:3000
+    depends_on:
+      - backend
+
+networks:
+  mqtt:
