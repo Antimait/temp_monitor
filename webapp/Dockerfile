@@ -1,8 +1,9 @@
 FROM node:12-alpine AS builder
 WORKDIR /app
 COPY . .
-RUN npm install
-RUN npm run build
+RUN apk update && apk add python make g++ \
+	&& npm install \
+	&& npm run build
 
 FROM node:12-alpine
 RUN npm install -g serve

@@ -18,7 +18,6 @@ services:
     environment:
       - FLOWS=backend_flow.json
     volumes:
-      - ./temp_data:/temp_data
       - ./backend_flow.json:/data/backend_flow.json
     ports:
       - 1880:1880
