@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import ReactDOM from "react-dom";
 import GraphBox from "./GraphBox";
+import Options from "./Options";
 import { w3cwebsocket as W3CWebSocket } from "websocket";
 
 import "./index.css";
@@ -14,6 +15,11 @@ url.protocol = "ws:";
 const wsEndpoint = url.origin;
 
 const client = new W3CWebSocket(wsEndpoint);
+client.onopen = () => {
+    console.log('WebSocket Client Connected');
+};
+
+
 
 class App extends Component {
     temp_data;
@@ -24,34 +30,44 @@ class App extends Component {
             data: [],
             error: false
         }
-    }
+        this.resetHandler = this.resetHandler.bind(this);
 
-     componentDidMount(){
-        fetch(nodeEndpoint + "/temp_data")
-        .then(resp => resp.json())
-        .then(arr => {
-            this.setState({
-                labels: [...Array(arr.length).keys()],
-                data: arr.map(x => parseInt(x)),
-                error: false
-            });
-        })
-
-        client.onopen = () => {
-            console.log('WebSocket Client Connected');
-        };
         client.onmessage = (message) => {
-            console.log(message);
             const newTemp = parseInt(message.data);
             let labels = this.state.labels;
             let temp_data = this.state.data;
-            labels.push(labels[labels.length - 1] + 1);
+            if(labels.length === 0) {
+                labels = [0];
+            } else {
+                labels.push(labels[labels.length - 1] + 1);                
+            }
             temp_data.push(newTemp);
             this.setState({
                 labels: labels,
                 data: temp_data
             });
         };
+    }
+
+    async componentDidMount(){
+        const resp = await fetch(nodeEndpoint + "/temp_data");
+        const arr = await resp.json();
+
+        console.log(arr);
+        this.setState({
+            labels: [...Array(arr.length).keys()],
+            data: arr.map(x => parseInt(x)),
+            error: false
+        });
+    }
+
+    async resetHandler() {
+        const delResp = await fetch(nodeEndpoint + "/temp_data", {method: "delete"});
+        this.setState({
+            labels: [],
+            data: [],
+            error: false
+        });
     }
 
     render() {
@@ -61,7 +77,12 @@ class App extends Component {
             return <div><p>Error!</p></div>;
         }
 
-        return(<GraphBox labels={labels} data={data} />);
+        return(
+            <div id="mainBox">
+                <GraphBox labels={labels} data={data} />
+                <Options resetHandler={this.resetHandler} />
+            </div>
+        ); 
     }
 }
 
